@@ -76,7 +76,7 @@ def get_bond_market_conventions(country):
     if country == BondMarkets.AUSTRIA:
         return (act_act, annual, 2, 0, None)
     if country == BondMarkets.AUSTRALIA:
-        return (act_act, annual, 2, 7, CalendarTypes.NONE)
+        return (act_act, semi_annual, 2, 7, CalendarTypes.NONE)
     if country == BondMarkets.BELGIUM:
         return (act_act, annual, 2, 0, None)
     if country == BondMarkets.CYPRUS:
@@ -106,7 +106,7 @@ def get_bond_market_conventions(country):
     if country == BondMarkets.NETHERLANDS:
         return (act_act, annual, 2, 0, None)
     if country == BondMarkets.NEW_ZEALAND:
-        return (act_act, annual, 2, 0, None)
+        return (act_act, semi_annual, 2, 0, None)
     if country == BondMarkets.NORWAY:
         return (thirty360, annual, 2, 2, None)
     if country == BondMarkets.PORTUGAL:
@@ -140,7 +140,7 @@ def get_bond_market_conventions(country):
     if country == BondMarkets.SWEDEN:
         return (thirtye360, annual, 2, 0, None)
     if country == BondMarkets.JAPAN:
-        return (act_act, annual, 2, 0, None)
+        return (act_act, semi_annual, 2, 0, None)
     if country == BondMarkets.SWITZERLAND:
         return (act_act, annual, 2, 0, None)
     if country == BondMarkets.UNITED_STATES:
