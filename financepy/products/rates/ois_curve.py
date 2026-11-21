@@ -582,7 +582,7 @@ class OISCurve(DiscountCurve):
     ####################################################################################
 
     def check_refit(self, fra_tol, swap_tol):
-        """Ensure that the Libor curve refits the calibration instruments.
+        """Ensure that the OIS curve refits its calibration instruments.
         We omit deposits as these are fitted exactly in the bootstrap."""
 
         for fra in self.used_fras:
@@ -592,9 +592,9 @@ class OISCurve(DiscountCurve):
                 raise FinError("FRA not repriced.")
 
         for swap in self.used_swaps:
-            # We value it as of the start date of the swap
-            v = swap.value(self.anchor_dt, self, self, None, principal=0.0)
-            v = v / swap.notional
+            # Use the same single-curve valuation as the bootstrap objective.
+            v = swap.value(self.anchor_dt, self)
+            v = v / swap.fixed_leg.notional
             if abs(v) > swap_tol:
                 print(
                     "Swap with maturity " + str(swap.maturity_dt) + " Not Repriced. Has Value",
