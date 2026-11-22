@@ -7,7 +7,7 @@ This directory collects the existing FinancePy source-code examples and groups t
 From the repository root, run an example with Python, for example:
 
 ```console
-python examples/code/bonds/example_bond.py
+python examples/scripts/bonds/example_bond.py
 ```
 
 ## Categories
