@@ -528,3 +528,13 @@ def test_bond_us_treasury_final_period_uses_simple_interest():
         settle_dt, treasury - bond.accrued_interest(settle_dt, 100.0), YTMCalcType.US_TREASURY
     )
     assert abs(ytm_back - ytm) < 1e-9
+
+
+########################################################################################
+
+
+def test_bond_market_semi_annual_coupons():
+
+    for country in (BondMarkets.AUSTRALIA, BondMarkets.JAPAN, BondMarkets.NEW_ZEALAND):
+        freq_type = get_bond_market_conventions(country)[1]
+        assert freq_type == FrequencyTypes.SEMI_ANNUAL
