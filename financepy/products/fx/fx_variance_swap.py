@@ -60,9 +60,10 @@ class FinFXVarianceSwap:
     ###########################################################################
 
     def value(self, value_dt: Date, realised_var, fair_strike_var, libor_curve: DiscountCurve):
-        """Calculate the value of the variance swap based on the realised
-        volatility to the valuation date, the forward looking implied
-        volatility to the maturity date using the libor discount curve."""
+        """Value the swap from realised and remaining fair variances.
+
+        Paying the strike receives the floating variance payoff; receiving
+        the strike reverses the net payoff."""
 
         if isinstance(value_dt, Date) is False:
             raise FinError("Valuation date is not a Date")
@@ -80,6 +81,8 @@ class FinFXVarianceSwap:
         expected_var += (t2 - t1) * fair_strike_var / t2
 
         payoff = expected_var - self.strike_variance
+        if not self.pay_strike_flag:
+            payoff = -payoff
 
         df = libor_curve.df(self.maturity_dt)
         v = payoff * self.notional * df
