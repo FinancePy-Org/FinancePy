@@ -65,9 +65,10 @@ class EquityVarianceSwap:
               realised_var: float,
               fair_strike_var: float,
               libor_curve: DiscountCurve):
-        """Calculate the value of the variance swap based on the realised
-        volatility to the valuation date, the forward looking implied
-        volatility to the maturity date using the libor discount curve."""
+        """Value the swap from realised and remaining fair variances.
+
+        Paying the strike receives the floating variance payoff; receiving
+        the strike reverses the net payoff."""
 
         if value_dt < self.start_dt or value_dt > self.maturity_dt:
             raise FinError("Valuation date must be within the variance swap life")
@@ -79,6 +80,8 @@ class EquityVarianceSwap:
         expected_variance += (t2 - t1) * fair_strike_var / t2
 
         payoff = expected_variance - self.strike_variance
+        if not self.pay_strike_flag:
+            payoff = -payoff
 
         df = libor_curve.df(self.maturity_dt)
         v = payoff * self.notional * df
