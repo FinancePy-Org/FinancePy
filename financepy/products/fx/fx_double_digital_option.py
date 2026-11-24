@@ -137,15 +137,16 @@ class FXDoubleDigitalOption:
             raise FinError("Option time to maturity is less than zero.")
 
         t_del = np.maximum(t_del, 1e-10)
+        t_spot = option_years(value_dt, spot_dt)
 
-        # TODO RESOLVE t_del versus TEXP
+        # Today's spot rate settles on the spot date, so the forward to delivery
+        # grows from the spot date. The payment is discounted from delivery.
         dom_df = domestic_curve.df_t(t_del)
-        for_df = foreign_curve.df_t(t_del)
-
-        r_d = -np.log(dom_df) / t_del
-        r_f = -np.log(for_df) / t_del
+        dom_fwd_df = dom_df / domestic_curve.df_t(t_spot)
+        for_fwd_df = foreign_curve.df_t(t_del) / foreign_curve.df_t(t_spot)
 
         s0 = spot_fx_rate
+        f = s0 * for_fwd_df / dom_fwd_df
         k_1 = self.lower_strike
         k_2 = self.upper_strike
 
@@ -156,27 +157,24 @@ class FXDoubleDigitalOption:
         if isinstance(model, BlackScholes):
 
             volatility = model.volatility
-            ln_s0_k1 = np.log(s0 / k_1)
-            ln_s0_k2 = np.log(s0 / k_2)
             den = volatility * np.sqrt(t_exp)
             v2 = volatility * volatility
-            mu = r_d - r_f
-            lower_d2_num = ln_s0_k1 + (mu - v2 / 2.0) * t_exp
-            upper_d2_num = ln_s0_k2 + (mu - v2 / 2.0) * t_exp
+            lower_d2_num = np.log(f / k_1) - v2 / 2.0 * t_exp
+            upper_d2_num = np.log(f / k_2) - v2 / 2.0 * t_exp
             lower_d2 = _standardized_distance(lower_d2_num, den)
             upper_d2 = _standardized_distance(upper_d2_num, den)
 
             if self.prem_currency == self.for_name:
-                # One unit of foreign currency is an asset-or-nothing payoff: it is
-                # worth S0 exp(-r_f t) N(d1) in domestic currency, with d1 not d2.
+                # One unit of foreign currency is an asset-or-nothing payoff: paid at
+                # delivery it is worth dom_df * f * N(d1) in domestic currency.
                 lower_d1 = _standardized_distance(
                     lower_d2_num + den**2, den
                 )
                 upper_d1 = _standardized_distance(
                     upper_d2_num + den**2, den
                 )
-                lower_digital = s0 * for_df * normcdf_vect(-lower_d1)
-                upper_digital = s0 * for_df * normcdf_vect(-upper_d1)
+                lower_digital = dom_df * f * normcdf_vect(-lower_d1)
+                upper_digital = dom_df * f * normcdf_vect(-upper_d1)
             elif self.prem_currency == self.dom_name:
                 # A domestic cash payment is discounted at the domestic rate.
                 lower_digital = dom_df * normcdf_vect(-lower_d2)
