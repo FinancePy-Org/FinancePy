@@ -9,6 +9,7 @@ from financepy.market.curves.flat_discount_curve import FlatDiscountCurve
 from financepy.models.black_scholes import BlackScholes
 from financepy.products.fx.fx_digital_option import FXDigitalOption
 from financepy.products.fx.fx_double_digital_option import FXDoubleDigitalOption
+from financepy.products.fx.fx_vanilla_option import FXVanillaOption
 from financepy.utils.date import Date
 from financepy.utils.global_types import OptionTypes
 
@@ -71,3 +72,45 @@ def test_double_digital_with_far_strikes_pays_with_certainty():
     assert np.isclose(
         _double_digital("EUR", 1e-6, 1e6), spot_fx_rate * foreign_curve.df(expiry_dt)
     )
+
+
+########################################################################################
+
+# With a spot lag, today's spot settles on the spot date and the payment is made on
+# the delivery date. Monday to Wednesday in both years, so EURUSD's T+2 business-day
+# spot date matches two weekdays.
+lag_value_dt = Date(9, 3, 2026)
+lag_expiry_dt = Date(8, 3, 2027)
+lag_domestic_curve = FlatDiscountCurve(lag_value_dt, r_dom)
+lag_foreign_curve = FlatDiscountCurve(lag_value_dt, r_for)
+
+
+def _lag_value(option):
+    return option.value(lag_value_dt, spot_fx_rate, lag_domestic_curve, lag_foreign_curve, model)
+
+
+def test_double_digital_with_spot_lag_is_a_difference_of_two_digital_puts():
+    """The docstring's decomposition must also hold when spot_days is not zero."""
+    for prem_currency in ("USD", "EUR"):
+        double = FXDoubleDigitalOption(
+            lag_expiry_dt, upper_strike, lower_strike, "EURUSD", 1.0, prem_currency, 2
+        )
+        puts = [
+            FXDigitalOption(lag_expiry_dt, k, "EURUSD", OptionTypes.DIGITAL_PUT, 1.0, prem_currency, 2)
+            for k in (upper_strike, lower_strike)
+        ]
+        assert np.isclose(_lag_value(double), _lag_value(puts[0]) - _lag_value(puts[1]), rtol=1e-10)
+
+
+def test_digitals_with_spot_lag_decompose_the_vanilla_call():
+    """Asset-or-nothing call less K cash-or-nothing calls is the vanilla call, which
+    builds its forward from the spot date to delivery."""
+    k = 1.12
+    asset = FXDigitalOption(lag_expiry_dt, k, "EURUSD", OptionTypes.DIGITAL_CALL, 1.0, "EUR", 2)
+    cash = FXDigitalOption(lag_expiry_dt, k, "EURUSD", OptionTypes.DIGITAL_CALL, 1.0, "USD", 2)
+    vanilla = FXVanillaOption(lag_expiry_dt, k, "EURUSD", OptionTypes.EUROPEAN_CALL, 1.0, "USD")
+    assert vanilla.delivery_dt == cash.delivery_dt
+
+    expected = _lag_value(vanilla)["v"]
+
+    assert np.isclose(_lag_value(asset) - k * _lag_value(cash), expected, rtol=1e-6)
