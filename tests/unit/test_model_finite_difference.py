@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from pytest import approx
 
 from financepy.utils.global_types import OptionTypes
@@ -8,6 +9,8 @@ from financepy.models.black_scholes import BlackScholes
 from financepy.utils.date import Date
 from financepy.utils.global_vars import G_DAYS_IN_YEAR
 from financepy.models.equity_crr_tree import crr_tree_val_avg
+from financepy.models.bs_american_analytic import BlackScholesAlgorithmTypes
+from financepy.models.bs_american_analytic import american_value
 
 from financepy.models.finite_difference import black_scholes_fd, fn_dx, fn_dxx
 from financepy.models.finite_difference import solve_tridiagonal_matrix
@@ -545,6 +548,50 @@ def test_put_option():
     )
 
     assert v == approx(v0, 1e-2)
+
+
+########################################################################################
+
+
+@pytest.mark.parametrize("r, q", [(-0.01, 0.02), (0.03, -0.02), (-0.02, -0.01)])
+@pytest.mark.parametrize("opt_type", [OptionTypes.EUROPEAN_CALL, OptionTypes.EUROPEAN_PUT])
+def test_european_fd_negative_rate_or_dividend(r, q, opt_type):
+    """Negative rates and dividend yields are valid inputs (e.g. EUR, CHF, JPY)."""
+    s, t, k, vol = 100.0, 1.5, 95.0, 0.25
+
+    v = black_scholes_fd(s, vol, t, k, r, q, opt_type.value)
+
+    assert v == approx(american_value(s, t, k, r, q, vol, opt_type), abs=1e-3)
+
+
+########################################################################################
+
+
+def test_american_put_fd_negative_rate_no_early_exercise():
+    """With r <= 0 and q >= 0 early exercise of a put is never optimal, so it is worth
+    the European put."""
+    s, t, k, r, q, vol = 80.0, 2.0, 100.0, -0.01, 0.02, 0.3
+
+    v = black_scholes_fd(s, vol, t, k, r, q, OptionTypes.AMERICAN_PUT.value)
+
+    assert v == approx(american_value(s, t, k, r, q, vol, OptionTypes.EUROPEAN_PUT), abs=1e-3)
+
+
+########################################################################################
+
+
+def test_american_call_fd_negative_rate():
+    """With r < 0 < q the call can have two exercise boundaries, which the analytic
+    approximations do not handle. Compare with a fine Leisen-Reimer tree."""
+    s, t, k, r, q, vol = 130.0, 3.0, 100.0, -0.03, 0.03, 0.4
+
+    v = black_scholes_fd(s, vol, t, k, r, q, OptionTypes.AMERICAN_CALL.value)
+    v_lr = american_value(
+        s, t, k, r, q, vol, OptionTypes.AMERICAN_CALL, BlackScholesAlgorithmTypes.LEISEN_REIMER, num_steps=2001
+    )
+
+    assert v == approx(v_lr, abs=2e-2)
+    assert v >= american_value(s, t, k, r, q, vol, OptionTypes.EUROPEAN_CALL)
 
 
 ########################################################################################
