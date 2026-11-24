@@ -133,10 +133,13 @@ class FXDigitalOption:
             raise FinError("Option time to maturity is less than zero.")
 
         t_del = np.maximum(t_del, 1e-10)
+        t_spot = option_years(value_dt, spot_dt)
 
-        # TODO RESOLVE t_del versus TEXP
+        # Today's spot rate settles on the spot date, so the forward to delivery
+        # grows from the spot date. The payment is discounted from delivery.
         dom_df = domestic_curve.df_t(t_del)
-        for_df = foreign_curve.df_t(t_del)
+        dom_fwd_df = dom_df / domestic_curve.df_t(t_spot)
+        for_fwd_df = foreign_curve.df_t(t_del) / foreign_curve.df_t(t_spot)
 
         if not isinstance(model, BlackScholes):
             raise FinError("Model must be BlackScholes.")
@@ -146,7 +149,7 @@ class FXDigitalOption:
         if t_exp == 0.0:
             f = spot_fx_rate
         else:
-            f = spot_fx_rate * for_df / dom_df
+            f = spot_fx_rate * for_fwd_df / dom_fwd_df
         k = self.strike_fx_rate
         v = model.volatility
         vol_sqrt_t = v * np.sqrt(t_exp)
@@ -156,11 +159,12 @@ class FXDigitalOption:
         d1 = _standardized_distance(d1_numerator, vol_sqrt_t)
         d2 = _standardized_distance(d2_numerator, vol_sqrt_t)
 
+        # One foreign unit paid at delivery is worth dom_df * f in domestic currency.
         if self.opt_type == OptionTypes.DIGITAL_CALL and self.for_name == self.prem_currency:
-            v = spot_fx_rate * for_df * normcdf_vect(d1)
+            v = dom_df * f * normcdf_vect(d1)
 
         elif self.opt_type == OptionTypes.DIGITAL_PUT and self.for_name == self.prem_currency:
-            v = spot_fx_rate * for_df * normcdf_vect(-d1)
+            v = dom_df * f * normcdf_vect(-d1)
 
         elif self.opt_type == OptionTypes.DIGITAL_CALL and self.dom_name == self.prem_currency:
             v = dom_df * normcdf_vect(d2)
