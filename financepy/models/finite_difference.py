@@ -31,11 +31,9 @@ def validate_black_scholes_fd_inputs(
     if strike_price <= 0.0:
         raise ValueError("strike_price must be positive")
 
-    if risk_free_rate < 0.0:
-        raise ValueError("risk_free_rate must be positive")
-
-    if dividend_yield < 0.0:
-        raise ValueError("dividend_yield must be positive")
+    # Negative risk_free_rate and dividend_yield are allowed: the theta scheme does
+    # not depend on their sign, and the early-exercise check handles the
+    # double-boundary American cases that negative rates can create.
 
     if volatility < 0.0:
         raise ValueError("volatility must be non-negative")
