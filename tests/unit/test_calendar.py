@@ -405,6 +405,30 @@ def test_target_additional_closing_days():
     assert cal.is_business_day(Date(31, 12, 2026))
 
 
+def test_target_closing_days_start_in_2000():
+    cal = Calendar(CalendarTypes.TARGET)
+
+    # Good Friday and Easter Monday became TARGET closing days in 2000
+    for dt in [Date(2, 4, 1999), Date(5, 4, 1999)]:
+        assert not cal.is_holiday(dt), dt
+        assert cal.is_business_day(dt), dt
+
+    for dt in [Date(21, 4, 2000), Date(24, 4, 2000), Date(18, 4, 2025), Date(21, 4, 2025)]:
+        assert cal.is_holiday(dt), dt
+        assert not cal.is_business_day(dt), dt
+
+    # 1999 closing days were New Year's Day, Christmas Day and 31 December
+    for dt in [Date(1, 1, 1999), Date(25, 12, 1999), Date(31, 12, 1999)]:
+        assert cal.is_holiday(dt), dt
+
+    # 1 May and 26 December are closing days from 2000
+    for dt in [Date(1, 5, 2000), Date(26, 12, 2000), Date(1, 5, 2026), Date(26, 12, 2025)]:
+        assert cal.is_holiday(dt), dt
+
+    for dt in [Date(1, 5, 1999), Date(26, 12, 1999)]:
+        assert not cal.is_holiday(dt), dt
+
+
 def test_modified_following_does_not_cross_month():
     cal = Calendar(CalendarTypes.WEEKEND)
 
