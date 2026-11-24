@@ -35,3 +35,12 @@ def test_cds_option():
 
         assert round(v, 4) == result
         assert vol == 0.3
+
+
+def test_cds_option_zero_volatility():
+
+    for is_payer in (True, False):
+        cds_option = CDSOption(expiry_dt, maturity_dt, 0.015, notional, is_payer)
+        v0 = cds_option.value(value_dt, issuer_curve, 0.0)
+        v1 = cds_option.value(value_dt, issuer_curve, 1e-8)
+        assert round(v0, 6) == round(v1, 6)
