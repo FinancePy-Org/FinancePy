@@ -3085,7 +3085,7 @@ class Calendar:
         if m == 1 and d == 1:  # new year's day
             return True
 
-        if m == 5 and d == 1:  # May day
+        if m == 5 and d == 1 and y >= 2000:  # May day
             return True
 
         if not MIN_CALENDAR_YEAR <= y <= MAX_CALENDAR_YEAR:
@@ -3094,14 +3094,14 @@ class Calendar:
         if m == 12 and d == 25:  # Xmas bank holiday
             return True
 
-        if m == 12 and d == 26:  # Xmas bank holiday
+        if m == 12 and d == 26 and y >= 2000:  # Xmas bank holiday
             return True
 
         # Additional closing days for the Year 2000 and euro cash changeovers
         if m == 12 and d == 31 and y in (1999, 2001):
             return True
 
-        if m == 3 or m == 4:
+        if y >= 2000 and (m == 3 or m == 4):
             # Easter Monday falls between Mar 24 and Apr 26 and Good Friday
             # is three days before it
             return day_in_year - easter_monday_day[y - MIN_CALENDAR_YEAR] in (0, -3)
