@@ -80,6 +80,11 @@ class EquityAmericanOption(EquityOption):
         r = discount_curve.zero_rate_cc(self.expiry_dt)
         q = dividend_curve.zero_rate_cc(self.expiry_dt)
 
+        # The pricers accept a negative q because it is the foreign rate for FX
+        # options, but the dividend yield of a stock cannot be negative.
+        if q < 0.0:
+            raise FinError("Dividend yield cannot be negative for an equity option.")
+
         s = np.asarray(stock_price, dtype=float)
         k = self.strike_price
         vol = model.volatility
