@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from financepy.utils.date import Date
+from financepy.utils.error import FinError
 from financepy.models.black_scholes import BlackScholes
 from financepy.models.bs_american_analytic import BlackScholesAlgorithmTypes
 from financepy.market.curves.flat_discount_curve import FlatDiscountCurve
@@ -126,3 +127,47 @@ def test_american_leisen_reimer(opt_type, expected):
     )
 
     assert round(value, 3) == expected
+
+
+########################################################################################
+
+
+@pytest.mark.parametrize(
+    "algo_type",
+    [BlackScholesAlgorithmTypes.DEFAULT, BlackScholesAlgorithmTypes.FINITE_DIFFERENCE],
+)
+def test_negative_dividend_yield_is_rejected(algo_type):
+    """A stock's dividend yield cannot be negative. The pricers accept a negative
+    q because it is the foreign rate for FX options, so the equity product checks it."""
+
+    option = EquityAmericanOption(expiry_dt, strike_price, OptionTypes.AMERICAN_PUT)
+
+    with pytest.raises(FinError, match="Dividend yield"):
+        option.value(
+            value_dt,
+            stock_price,
+            discount_curve,
+            FlatDiscountCurve(value_dt, -0.01),
+            model,
+            algo_type=algo_type,
+        )
+
+
+########################################################################################
+
+
+def test_negative_interest_rate_is_allowed():
+    """Interest rates can be negative for equity options too."""
+
+    option = EquityAmericanOption(expiry_dt, strike_price, OptionTypes.AMERICAN_PUT)
+
+    value = option.value(
+        value_dt,
+        stock_price,
+        FlatDiscountCurve(value_dt, -0.01),
+        dividend_curve,
+        model,
+        algo_type=BlackScholesAlgorithmTypes.FINITE_DIFFERENCE,
+    )
+
+    assert value > 0.0
