@@ -145,7 +145,13 @@ class SwapFixedLeg:
 
             self.payment_dts.append(payment_dt)
 
-            year_frac, num, _ = day_counter.year_frac(prev_dt, next_dt)
+            # The final period ends on the termination date, which 30E/360
+            # ISDA does not move to the 30th when it is the end of February
+            is_termination_dt = next_dt == schedule_dts[-1]
+
+            year_frac, num, _ = day_counter.year_frac(
+                prev_dt, next_dt, is_termination_date=is_termination_dt
+            )
 
             self.rates.append(self.cpn)
 
