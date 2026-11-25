@@ -61,3 +61,31 @@ def test_low_volatility():
         option = FXOneTouchOption(expiry_dt, opt_type, barrier, payment_size)
         v = option.value(value_dt, 1.0, curves[0], curves[1], BlackScholes(0.0005))
         assert np.isclose(v, expected, rtol=1e-10, atol=1e-10), (opt_type, v, expected)
+
+
+########################################################################################
+
+
+def test_mc_asset_in_plus_out_is_discounted_forward():
+
+    # On the same paths, knock-in plus knock-out asset-at-expiry pays S(T) on every path
+    for in_type, out_type, spot_fx_rate in [
+        (
+            TouchOptionTypes.DOWN_AND_IN_ASSET_AT_EXPIRY,
+            TouchOptionTypes.DOWN_AND_OUT_ASSET_OR_NOTHING,
+            1.05,
+        ),
+        (
+            TouchOptionTypes.UP_AND_IN_ASSET_AT_EXPIRY,
+            TouchOptionTypes.UP_AND_OUT_ASSET_OR_NOTHING,
+            0.95,
+        ),
+    ]:
+        v_in = FXOneTouchOption(expiry_dt, in_type, barrier_rate, payment_size).value_mc(
+            value_dt, spot_fx_rate, domestic_curve, foreign_curve, model
+        )
+        v_out = FXOneTouchOption(expiry_dt, out_type, barrier_rate, payment_size).value_mc(
+            value_dt, spot_fx_rate, domestic_curve, foreign_curve, model
+        )
+        expected = spot_fx_rate * foreign_curve.df(expiry_dt)
+        assert np.isclose(v_in + v_out, expected, rtol=5e-3), (in_type, v_in + v_out, expected)
