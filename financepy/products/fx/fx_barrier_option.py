@@ -18,6 +18,7 @@ from ...utils.check_values import check_curve_dt
 from ...utils.check_values import check_stock_price
 from ...utils.check_values import check_strike_price
 from ...utils.helpers import option_years
+from ...utils.fx_conventions import fx_spot_date
 from ...models.model import Model
 from ...utils.valuation_log import log_value, log_table, log_row
 
@@ -79,8 +80,7 @@ class FXBarrierOption(FXOption):
         check_curve_dt(value_dt, foreign_curve)
         check_stock_price(spot_fx_rate)
 
-        domestic_df = domestic_curve.df_t(t_exp)
-        foreign_df = foreign_curve.df_t(t_exp)
+        domestic_df, foreign_df = self._delivery_dfs(value_dt, domestic_curve, foreign_curve)
 
         values = barrier_option_value(
             self.strike_fx_rate,
@@ -100,6 +100,31 @@ class FXBarrierOption(FXOption):
             return float(values)
 
         return np.asarray(values)
+
+    ###########################################################################
+
+    def _delivery_dfs(
+        self,
+        value_dt: Date,
+        domestic_curve: DiscountCurve,
+        foreign_curve: DiscountCurve,
+    ) -> tuple[float, float]:
+        """Domestic and foreign discount factors over the option's life that
+        reproduce the FXVanillaOption forward and payment discounting.
+
+        Today's spot settles on the spot date and the option settles on the
+        delivery date, so the forward grows from spot to delivery and the
+        payoff is discounted from delivery."""
+
+        spot_dt = fx_spot_date(self.currency_pair, value_dt)
+        delivery_dt = fx_spot_date(self.currency_pair, self.expiry_dt)
+
+        domestic_df = domestic_curve.df(delivery_dt)
+        fwd_over_spot = (foreign_curve.df(delivery_dt) / foreign_curve.df(spot_dt)) / (
+            domestic_df / domestic_curve.df(spot_dt)
+        )
+
+        return domestic_df, domestic_df * fwd_over_spot
 
     ###########################################################################
 
@@ -130,8 +155,9 @@ class FXBarrierOption(FXOption):
             raise FinError(
                 "Barrier status at expiry cannot be inferred from the current FX rate"
             )
-        r_d = domestic_curve.zero_rate_cc(self.expiry_dt)
-        r_f = foreign_curve.zero_rate_cc(self.expiry_dt)
+        domestic_df, foreign_df = self._delivery_dfs(value_dt, domestic_curve, foreign_curve)
+        r_d = -np.log(domestic_df) / t_exp
+        r_f = -np.log(foreign_df) / t_exp
 
         mu = r_d - r_f
 

@@ -106,10 +106,10 @@ def test_down_and_in_call():
         value_dt, spot_fx_rate, domestic_curve, foreign_curve, model
     )
 
-    assert round(value, 4) == 9.2270
-    assert round(delta, 4) == 0.5869
-    assert round(vega, 4) == 0.3791
-    assert round(theta, 4) == -5.0924
+    assert round(value, 4) == 9.2220
+    assert round(delta, 4) == 0.5865
+    assert round(vega, 4) == 0.3789
+    assert round(theta, 4) == -5.0896
 
 
 ########################################################################################
@@ -188,10 +188,10 @@ def test_up_and_in_call():
         value_dt, spot_fx_rate, domestic_curve, foreign_curve, model
     )
 
-    assert round(value, 4) == 9.2067
-    assert round(delta, 4) == 0.5900
-    assert round(vega, 4) == 0.3811
-    assert round(theta, 4) == -5.1228
+    assert round(value, 4) == 9.2016
+    assert round(delta, 4) == 0.5896
+    assert round(vega, 4) == 0.3809
+    assert round(theta, 4) == -5.1200
 
 
 ########################################################################################
@@ -229,10 +229,10 @@ def test_up_and_out_put():
         value_dt, spot_fx_rate, domestic_curve, foreign_curve, model
     )
 
-    assert round(value, 4) == 46.1145
-    assert round(delta, 4) == -0.9796
+    assert round(value, 4) == 46.0893
+    assert round(delta, 4) == -0.9791
     assert round(vega, 4) == 0.0013
-    assert round(theta, 4) == 3.7654
+    assert round(theta, 4) == 3.7633
 
 
 ########################################################################################
@@ -270,10 +270,10 @@ def test_up_and_in_put():
         value_dt, spot_fx_rate, domestic_curve, foreign_curve, model
     )
 
-    assert round(value, 4) == 2.7444
-    assert round(delta, 4) == 0.2102
-    assert round(vega, 4) == 0.2680
-    assert round(theta, 4) == -2.3502
+    assert round(value, 4) == 2.7429
+    assert round(delta, 4) == 0.2101
+    assert round(vega, 4) == 0.2678
+    assert round(theta, 4) == -2.3489
 
 
 ########################################################################################
@@ -352,10 +352,10 @@ def test_down_and_in_put():
         value_dt, spot_fx_rate, domestic_curve, foreign_curve, model
     )
 
-    assert round(value, 4) == 6.3301
-    assert round(delta, 4) == -0.3933
-    assert round(vega, 4) == 0.3791
-    assert round(theta, 4) == -2.2964
+    assert round(value, 4) == 6.3266
+    assert round(delta, 4) == -0.3931
+    assert round(vega, 4) == 0.3789
+    assert round(theta, 4) == -2.2951
 
 
 ########################################################################################
