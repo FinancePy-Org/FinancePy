@@ -152,7 +152,7 @@ class CDSOption:
 
         # Black formula's zero-variance limit
         if vol_sqrt_t == 0.0:
-            if self.long_protection:
+            if self.is_payer:
                 option_value = max(fwd_spread - strike, 0.0)
             else:
                 option_value = max(strike - fwd_spread, 0.0)
