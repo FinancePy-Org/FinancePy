@@ -113,7 +113,7 @@ class CDSIndexOption:
         strike_rpv01 = self.cds_contract.rpv01(value_dt, strike_curve)[CLEAN]
         index_rpv01 = self.cds_contract.rpv01(value_dt, index_curve)[CLEAN]
 
-        s = self.cds_contract.par_spread(value_dt, index_curve)
+        s = self.cds_contract.par_spread(value_dt, index_curve, index_recovery)
 
         fep = df * (1.0 - q_expiry_index) * (1.0 - index_recovery)
         adj_fwd = s + fep / index_rpv01
@@ -180,7 +180,7 @@ class CDSIndexOption:
             q = issuer_curve.survival_prob(t_exp)
             dh1 = (1.0 - issuer_curve.recovery_rate) * (1.0 - q)
 
-            s = self.cds_contract.par_spread(value_dt, issuer_curve)
+            s = self.cds_contract.par_spread(value_dt, issuer_curve, issuer_curve.recovery_rate)
             rpv01 = self.cds_contract.rpv01(value_dt, issuer_curve)
             dh2 = (s - c) * rpv01[CLEAN] / (df_to_expiry * q_to_expiry)
 

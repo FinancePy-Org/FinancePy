@@ -137,8 +137,11 @@ class CDSOption:
 
         log_percentage("Volatility", volatility, level=2)
 
+        # The forward protection leg uses the recovery rate the issuer curve
+        # was calibrated with, as the front-end protection below does
         fwd_spread, fwd_rpv01, _ = self.cds.par_spread(value_dt,
                                                        issuer_curve,
+                                                       issuer_curve.recovery_rate,
                                                        all_values=True)
 
         t_exp = option_years(value_dt, self.expiry_dt)
