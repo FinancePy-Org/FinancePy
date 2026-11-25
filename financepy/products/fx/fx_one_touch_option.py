@@ -17,6 +17,8 @@ from ...utils.check_values import check_curve_dt
 from ...utils.helpers import option_years
 from ...models.model import Model
 from ...models.gbm_process_simulator import get_paths_times
+from ...models.bs_equity_one_touch import barrier_pay_asset_at_expiry_down
+from ...models.bs_equity_one_touch import barrier_pay_asset_at_expiry_up
 from ...products.fx.fx_option import FXOption
 from ...utils.math import normcdf_vect
 from ...market.curves.discount_curve import DiscountCurve
@@ -517,7 +519,8 @@ class FXOneTouchOption(FXOption):
             if s0 <= h:
                 raise FinError("Stock price is currently below barrier.")
 
-            v = _barrier_pay_one_at_hit_pv_down(s, h, 0.0, dt) * h
+            v = barrier_pay_asset_at_expiry_down(s, h)
+            v = v * np.exp(-r_d * t_exp)
             return v
 
         elif self.opt_type == TouchOptionTypes.UP_AND_IN_ASSET_AT_EXPIRY:
@@ -526,7 +529,8 @@ class FXOneTouchOption(FXOption):
             if s0 >= h:
                 raise FinError("Stock price is currently below barrier.")
 
-            v = _barrier_pay_one_at_hit_pv_up(s, h, 0.0, dt) * h
+            v = barrier_pay_asset_at_expiry_up(s, h)
+            v = v * np.exp(-r_d * t_exp)
             return v
 
         elif self.opt_type == TouchOptionTypes.DOWN_AND_OUT_CASH_OR_NOTHING:
