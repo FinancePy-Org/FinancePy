@@ -150,3 +150,6 @@ def test_market_calibration_is_invariant_to_monetary_units():
     assert calibrated[0][1] == pytest.approx(equity_volatility, rel=1.0e-9)
 
 
+def test_market_repr():
+    model = MertonFirmMkt(3.0, 10.0, 1.0, 0.05, 0.05, 0.4)
+    assert "IMPLIED ASSET VALUE" in repr(model)
