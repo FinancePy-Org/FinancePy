@@ -106,10 +106,10 @@ def test_down_and_in_call():
         value_dt, spot_fx_rate, domestic_curve, foreign_curve, model
     )
 
-    assert round(value, 4) == 9.2270
-    assert round(delta, 4) == 0.5869
-    assert round(vega, 4) == 0.3791
-    assert round(theta, 4) == -5.0924
+    assert round(value, 4) == 9.2220
+    assert round(delta, 4) == 0.5865
+    assert round(vega, 4) == 0.3789
+    assert round(theta, 4) == -5.0896
 
 
 ########################################################################################
@@ -188,10 +188,10 @@ def test_up_and_in_call():
         value_dt, spot_fx_rate, domestic_curve, foreign_curve, model
     )
 
-    assert round(value, 4) == 9.2067
-    assert round(delta, 4) == 0.5900
-    assert round(vega, 4) == 0.3811
-    assert round(theta, 4) == -5.1228
+    assert round(value, 4) == 9.2016
+    assert round(delta, 4) == 0.5896
+    assert round(vega, 4) == 0.3809
+    assert round(theta, 4) == -5.1200
 
 
 ########################################################################################
@@ -229,10 +229,10 @@ def test_up_and_out_put():
         value_dt, spot_fx_rate, domestic_curve, foreign_curve, model
     )
 
-    assert round(value, 4) == 46.1145
-    assert round(delta, 4) == -0.9796
+    assert round(value, 4) == 46.0893
+    assert round(delta, 4) == -0.9791
     assert round(vega, 4) == 0.0013
-    assert round(theta, 4) == 3.7654
+    assert round(theta, 4) == 3.7633
 
 
 ########################################################################################
@@ -270,10 +270,10 @@ def test_up_and_in_put():
         value_dt, spot_fx_rate, domestic_curve, foreign_curve, model
     )
 
-    assert round(value, 4) == 2.7444
-    assert round(delta, 4) == 0.2102
-    assert round(vega, 4) == 0.2680
-    assert round(theta, 4) == -2.3502
+    assert round(value, 4) == 2.7429
+    assert round(delta, 4) == 0.2101
+    assert round(vega, 4) == 0.2678
+    assert round(theta, 4) == -2.3489
 
 
 ########################################################################################
@@ -352,7 +352,44 @@ def test_down_and_in_put():
         value_dt, spot_fx_rate, domestic_curve, foreign_curve, model
     )
 
-    assert round(value, 4) == 6.3301
-    assert round(delta, 4) == -0.3933
-    assert round(vega, 4) == 0.3791
-    assert round(theta, 4) == -2.2964
+    assert round(value, 4) == 6.3266
+    assert round(delta, 4) == -0.3931
+    assert round(vega, 4) == 0.3789
+    assert round(theta, 4) == -2.2951
+
+
+########################################################################################
+
+
+def test_in_plus_out_equals_vanilla_with_spot_lag():
+    # EURUSD settles T+2, so the vanilla grows the forward from the spot date
+    # and discounts from the delivery date. In-out parity must still hold.
+    from financepy.products.fx.fx_vanilla_option import FXVanillaOption
+    from financepy.utils.global_types import OptionTypes
+
+    value_dt = Date(1, 3, 2024)
+    expiry_dt = Date(1, 3, 2025)
+    domestic_curve = FlatDiscountCurve(value_dt, 0.05)
+    foreign_curve = FlatDiscountCurve(value_dt, 0.02)
+    spot_fx_rate = 1.10
+    strike = 1.10
+
+    cases = [
+        (BarrierTypes.DOWN_AND_IN_CALL, BarrierTypes.DOWN_AND_OUT_CALL, 1.0, OptionTypes.EUROPEAN_CALL),
+        (BarrierTypes.UP_AND_IN_PUT, BarrierTypes.UP_AND_OUT_PUT, 1.2, OptionTypes.EUROPEAN_PUT),
+    ]
+
+    for knock_in, knock_out, barrier, opt_type in cases:
+        values = [
+            FXBarrierOption(
+                expiry_dt, strike, "EURUSD", barrier_type, barrier, num_obs_per_year, "USD"
+            ).value(value_dt, spot_fx_rate, domestic_curve, foreign_curve, model)
+            for barrier_type in (knock_in, knock_out)
+        ]
+
+        vanilla = FXVanillaOption(expiry_dt, strike, "EURUSD", opt_type, 1.0, "USD").value(
+            value_dt, spot_fx_rate, domestic_curve, foreign_curve, model
+        )["v"]
+
+        # The two pricers use different normal CDF approximations, worth ~1e-7 here.
+        assert abs(sum(values) - vanilla) < 1e-6
